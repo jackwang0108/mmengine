@@ -66,23 +66,28 @@ class BaseModel(BaseModule):
         init_cfg (dict, optional): Initialization config dict.
     """
 
-    def __init__(self,
-                 data_preprocessor: Optional[Union[dict, nn.Module]] = None,
-                 init_cfg: Optional[dict] = None):
+    def __init__(
+        self,
+        data_preprocessor: Optional[Union[dict, nn.Module]] = None,
+        init_cfg: Optional[dict] = None,
+    ):
         super().__init__(init_cfg)
         if data_preprocessor is None:
-            data_preprocessor = dict(type='BaseDataPreprocessor')
+            data_preprocessor = dict(type="BaseDataPreprocessor")
         if isinstance(data_preprocessor, nn.Module):
             self.data_preprocessor = data_preprocessor
         elif isinstance(data_preprocessor, dict):
             self.data_preprocessor = MODELS.build(data_preprocessor)
         else:
-            raise TypeError('data_preprocessor should be a `dict` or '
-                            f'`nn.Module` instance, but got '
-                            f'{type(data_preprocessor)}')
+            raise TypeError(
+                "data_preprocessor should be a `dict` or "
+                f"`nn.Module` instance, but got "
+                f"{type(data_preprocessor)}"
+            )
 
-    def train_step(self, data: Union[dict, tuple, list],
-                   optim_wrapper: OptimWrapper) -> Dict[str, torch.Tensor]:
+    def train_step(
+        self, data: Union[dict, tuple, list], optim_wrapper: OptimWrapper
+    ) -> Dict[str, torch.Tensor]:
         """Implements the default model training process including
         preprocessing, model forward propagation, loss calculation,
         optimization, and back-propagation.
@@ -111,7 +116,7 @@ class BaseModel(BaseModule):
         # Enable automatic mixed precision training context.
         with optim_wrapper.optim_context(self):
             data = self.data_preprocessor(data, True)
-            losses = self._run_forward(data, mode='loss')  # type: ignore
+            losses = self._run_forward(data, mode="loss")  # type: ignore
         parsed_losses, log_vars = self.parse_losses(losses)  # type: ignore
         optim_wrapper.update_params(parsed_losses)
         return log_vars
@@ -130,7 +135,7 @@ class BaseModel(BaseModule):
             list: The predictions of given data.
         """
         data = self.data_preprocessor(data, False)
-        return self._run_forward(data, mode='predict')  # type: ignore
+        return self._run_forward(data, mode="predict")  # type: ignore
 
     def test_step(self, data: Union[dict, tuple, list]) -> list:
         """``BaseModel`` implements ``test_step`` the same as ``val_step``.
@@ -142,7 +147,7 @@ class BaseModel(BaseModule):
             list: The predictions of given data.
         """
         data = self.data_preprocessor(data, False)
-        return self._run_forward(data, mode='predict')  # type: ignore
+        return self._run_forward(data, mode="predict")  # type: ignore
 
     def parse_losses(
         self, losses: Dict[str, torch.Tensor]
@@ -164,15 +169,12 @@ class BaseModel(BaseModule):
             if isinstance(loss_value, torch.Tensor):
                 log_vars.append([loss_name, loss_value.mean()])
             elif is_list_of(loss_value, torch.Tensor):
-                log_vars.append(
-                    [loss_name,
-                     sum(_loss.mean() for _loss in loss_value)])
+                log_vars.append([loss_name, sum(_loss.mean() for _loss in loss_value)])
             else:
-                raise TypeError(
-                    f'{loss_name} is not a tensor or list of tensors')
+                raise TypeError(f"{loss_name} is not a tensor or list of tensors")
 
-        loss = sum(value for key, value in log_vars if 'loss' in key)
-        log_vars.insert(0, ['loss', loss])
+        loss = sum(value for key, value in log_vars if "loss" in key)
+        log_vars.insert(0, ["loss", loss])
         log_vars = OrderedDict(log_vars)  # type: ignore
 
         return loss, log_vars  # type: ignore
@@ -189,18 +191,32 @@ class BaseModel(BaseModule):
         # the npu-related fields, using the _parse_to function
         # directly will cause the NPU to not be found.
         # Here, the input parameters are processed to avoid errors.
-        if args and isinstance(args[0], str) and 'npu' in args[0]:
+        if args and isinstance(args[0], str) and "npu" in args[0]:
             import torch_npu
-            args = tuple([
-                list(args)[0].replace(
-                    'npu', torch_npu.npu.native_device if hasattr(
-                        torch_npu.npu, 'native_device') else 'privateuseone')
-            ])
-        if kwargs and 'npu' in str(kwargs.get('device', '')):
+
+            args = tuple(
+                [
+                    list(args)[0].replace(
+                        "npu",
+                        (
+                            torch_npu.npu.native_device
+                            if hasattr(torch_npu.npu, "native_device")
+                            else "privateuseone"
+                        ),
+                    )
+                ]
+            )
+        if kwargs and "npu" in str(kwargs.get("device", "")):
             import torch_npu
-            kwargs['device'] = kwargs['device'].replace(
-                'npu', torch_npu.npu.native_device if hasattr(
-                    torch_npu.npu, 'native_device') else 'privateuseone')
+
+            kwargs["device"] = kwargs["device"].replace(
+                "npu",
+                (
+                    torch_npu.npu.native_device
+                    if hasattr(torch_npu.npu, "native_device")
+                    else "privateuseone"
+                ),
+            )
 
         device = torch._C._nn._parse_to(*args, **kwargs)[0]
         if device is not None:
@@ -218,7 +234,7 @@ class BaseModel(BaseModule):
             nn.Module: The model itself.
         """
         if device is None or isinstance(device, int):
-            device = torch.device('cuda', index=device)
+            device = torch.device("cuda", index=device)
         self._set_device(torch.device(device))
         return super().cuda(device)
 
@@ -233,7 +249,7 @@ class BaseModel(BaseModule):
             nn.Module: The model itself.
         """
         if device is None or isinstance(device, int):
-            device = torch.device('musa', index=device)
+            device = torch.device("musa", index=device)
         self._set_device(torch.device(device))
         return super().musa(device)
 
@@ -247,7 +263,7 @@ class BaseModel(BaseModule):
         Returns:
             nn.Module: The model itself.
         """
-        device = torch.device('mlu', torch.mlu.current_device())
+        device = torch.device("mlu", torch.mlu.current_device())
         self._set_device(device)
         return super().mlu()
 
@@ -277,7 +293,7 @@ class BaseModel(BaseModule):
         Returns:
             nn.Module: The model itself.
         """
-        self._set_device(torch.device('cpu'))
+        self._set_device(torch.device("cpu"))
         return super().cpu()
 
     def _set_device(self, device: torch.device) -> None:
@@ -297,10 +313,12 @@ class BaseModel(BaseModule):
         self.apply(apply_fn)
 
     @abstractmethod
-    def forward(self,
-                inputs: torch.Tensor,
-                data_samples: Optional[list] = None,
-                mode: str = 'tensor') -> Union[Dict[str, torch.Tensor], list]:
+    def forward(
+        self,
+        inputs: torch.Tensor,
+        data_samples: Optional[list] = None,
+        mode: str = "tensor",
+    ) -> Union[Dict[str, torch.Tensor], list]:
         """Returns losses or predictions of training, validation, testing, and
         simple inference process.
 
@@ -346,8 +364,9 @@ class BaseModel(BaseModule):
                   or ``dict`` of tensor for custom use.
         """
 
-    def _run_forward(self, data: Union[dict, tuple, list],
-                     mode: str) -> Union[Dict[str, torch.Tensor], list]:
+    def _run_forward(
+        self, data: Union[dict, tuple, list], mode: str
+    ) -> Union[Dict[str, torch.Tensor], list]:
         """Unpacks data for :meth:`forward`
 
         Args:
@@ -362,6 +381,8 @@ class BaseModel(BaseModule):
         elif isinstance(data, (list, tuple)):
             results = self(*data, mode=mode)
         else:
-            raise TypeError('Output of `data_preprocessor` should be '
-                            f'list, tuple or dict, but got {type(data)}')
+            raise TypeError(
+                "Output of `data_preprocessor` should be "
+                f"list, tuple or dict, but got {type(data)}"
+            )
         return results

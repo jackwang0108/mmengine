@@ -38,9 +38,9 @@ class Evaluator:
         for metric in self.metrics:
             metric.dataset_meta = dataset_meta
 
-    def process(self,
-                data_samples: Sequence[BaseDataElement],
-                data_batch: Optional[Any] = None):
+    def process(
+        self, data_samples: Sequence[BaseDataElement], data_batch: Optional[Any] = None
+    ):
         """Convert ``BaseDataSample`` to dict and invoke process method of each
         metric.
 
@@ -82,17 +82,20 @@ class Evaluator:
             for name in _results.keys():
                 if name in metrics:
                     raise ValueError(
-                        'There are multiple evaluation results with the same '
-                        f'metric name {name}. Please make sure all metrics '
-                        'have different prefixes.')
+                        "There are multiple evaluation results with the same "
+                        f"metric name {name}. Please make sure all metrics "
+                        "have different prefixes."
+                    )
 
             metrics.update(_results)
         return metrics
 
-    def offline_evaluate(self,
-                         data_samples: Sequence,
-                         data: Optional[Sequence] = None,
-                         chunk_size: int = 1):
+    def offline_evaluate(
+        self,
+        data_samples: Sequence,
+        data: Optional[Sequence] = None,
+        chunk_size: int = 1,
+    ):
         """Offline evaluate the dumped predictions on the given data .
 
         Args:
@@ -119,9 +122,10 @@ class Evaluator:
 
         if data is not None:
             assert len(data_samples) == len(data), (
-                'data_samples and data should have the same length, but got '
-                f'data_samples length: {len(data_samples)} '
-                f'data length: {len(data)}')
+                "data_samples and data should have the same length, but got "
+                f"data_samples length: {len(data_samples)} "
+                f"data length: {len(data)}"
+            )
             data = get_chunks(iter(data), chunk_size)
 
         size = 0
